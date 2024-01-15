@@ -57,3 +57,27 @@ const char *getPassword(struct User u)
     fclose(fp);
     return "no user found";
 }
+
+const char *getUsername(struct User u)
+{
+    FILE *fp;
+    struct User userChecker;
+
+    if ((fp = fopen("../data/users.txt", "r")) == NULL)
+    {
+        printf("Error Openning a file");
+        exit(1);
+    }
+
+    while (fscanf(fp, "%s %s", userChecker.name, userChecker.password) != EOF)
+    {
+        if (strcmp(userChecker.name, u.name) == 0)
+        {
+            fclose(fp);
+            char *buff = userChecker.name;
+            return buff;
+        }
+    }
+    fclose(fp);
+    return "User already exists";
+}

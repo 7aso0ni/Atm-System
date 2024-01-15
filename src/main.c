@@ -30,7 +30,7 @@ void mainMenu(struct User u)
         // here
         break;
     case 4:
-        checkAllAccounts(u);
+        // checkAllAccounts(u);
         break;
     case 5:
         // student TODO : add your **Make transaction** function
@@ -81,8 +81,17 @@ void initMenu(struct User *u)
             r = 1;
             break;
         case 2:
-            // student TODO : add your **Registration** function
-            // here
+            // student TODO: add your **Registration** function
+            registerMenu(u->name, u->password);
+            if (strcmp(u->name, getUsername(*u)) == 0)
+            {
+                printf("\nSomething went wrong");
+                exit(1);
+            }
+            else
+            {
+                printf("\n\nAccount Created!");
+            }
             r = 1;
             break;
         case 3:
@@ -97,7 +106,7 @@ void initMenu(struct User *u)
 int main()
 {
     struct User u;
-    
+
     initMenu(&u);
     mainMenu(u);
     return 0;
