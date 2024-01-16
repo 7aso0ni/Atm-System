@@ -33,6 +33,11 @@ void loginMenu(char a[50], char pass[50])
     }
 };
 
+void registerMenu(char a[50], char pass[50])
+{
+    printf("%s %s", a, pass);
+}
+
 const char *getPassword(struct User u)
 {
     FILE *fp;
@@ -63,9 +68,9 @@ const char *getUsername(struct User u)
     FILE *fp;
     struct User userChecker;
 
-    if ((fp = fopen("../data/users.txt", "r")) == NULL)
+    if ((fp = fopen("./data/users.txt", "r")) == NULL)
     {
-        printf("Error Openning a file");
+        printf("Error Opening a file\n");
         exit(1);
     }
 
