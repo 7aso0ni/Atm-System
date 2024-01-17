@@ -10,6 +10,7 @@ void loginMenu(char a[50], char pass[50])
     system("clear");
     printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login:");
     scanf("%s", a);
+    // fgets(a, 50, stdin); // fgets to avoid buffer overflow
 
     // disabling echo
     tcgetattr(fileno(stdin), &oflags);
@@ -24,18 +25,58 @@ void loginMenu(char a[50], char pass[50])
     }
     printf("\n\n\n\n\n\t\t\t\tEnter the password to login:");
     scanf("%s", pass);
+    // fgets(pass, 50, stdin);
 
     // restore terminal
     if (tcsetattr(fileno(stdin), TCSANOW, &oflags) != 0)
     {
         perror("tcsetattr");
-        return exit(1);
+        exit(1);
     }
 };
 
 void registerMenu(char a[50], char pass[50])
 {
-    printf("%s %s", a, pass);
+    struct termios oflags, nflags;
+
+    system("clear");
+    printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Register:");
+
+    // Reading username
+    if (scanf("%49s", a) != 1)
+    {
+        fprintf(stderr, "Error reading input for 'a'\n");
+        return;
+    }
+
+    // Disabling echo
+    tcgetattr(fileno(stdin), &oflags);
+    nflags = oflags;
+    nflags.c_lflag &= ~ECHO;
+    nflags.c_lflag |= ECHONL;
+
+    if (tcsetattr(fileno(stdin), TCSANOW, &nflags) != 0)
+    {
+        perror("tcsetattr");
+        return;
+    }
+
+    // Reading password
+    printf("\n\n\n\n\n\t\t\t\tEnter the password to Register:");
+    if (fgets(pass, 50, stdin) == NULL)
+    {
+        fprintf(stderr, "Error reading input for 'pass'\n");
+        return;
+    }
+
+    // Restore terminal
+    if (tcsetattr(fileno(stdin), TCSANOW, &oflags) != 0)
+    {
+        perror("tcsetattr");
+        exit(1);
+    }
+
+    // TODO: save the user into the file.
 }
 
 const char *getPassword(struct User u)
@@ -54,6 +95,8 @@ const char *getPassword(struct User u)
         if (strcmp(userChecker.name, u.name) == 0)
         {
             fclose(fp);
+            // UserChecker is a local variable and will be destroyed when the function returns
+            // making buff a dangling pointe
             char *buff = userChecker.password;
             return buff;
         }
@@ -73,16 +116,14 @@ const char *getUsername(struct User u)
         printf("Error Opening a file\n");
         exit(1);
     }
-
-    while (fscanf(fp, "%s %s", userChecker.name, userChecker.password) != EOF)
+    while (fscanf(fp, "%s %s", userChecker.name, userChecker.password) == 2)
     {
         if (strcmp(userChecker.name, u.name) == 0)
         {
             fclose(fp);
-            char *buff = userChecker.name;
-            return buff;
+            return strdup(userChecker.name); // this will duplicate the string and return it
         }
     }
     fclose(fp);
-    return "User already exists";
+    return NULL;
 }

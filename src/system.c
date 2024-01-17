@@ -140,7 +140,7 @@ void checkAllAccounts(struct User u)
     char userName[100];
     struct Record r;
 
-    FILE *pf = fopen(RECORDS, "r");
+    FILE *pf = fopen("./data/records.txt", "r");
 
     system("clear");
     printf("\t\t====== All accounts from user, %s =====\n\n", u.name);

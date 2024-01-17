@@ -27,10 +27,10 @@ void mainMenu(struct User u)
         break;
     case 3:
         // student TODO : add your **Check the details of existing accounts** function
-        // here
+        // here;
         break;
     case 4:
-        // checkAllAccounts(u);
+        checkAllAccounts(u);
         break;
     case 5:
         // student TODO : add your **Make transaction** function
@@ -85,7 +85,7 @@ void initMenu(struct User *u)
             registerMenu(u->name, u->password);
             if (strcmp(u->name, getUsername(*u)) == 0)
             {
-                printf("\nSomething went wrong");
+                printf("\nUser already exists");
                 exit(1);
             }
             else
