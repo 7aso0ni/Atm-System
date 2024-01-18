@@ -1,4 +1,5 @@
 #include "header.h"
+#include <unistd.h>
 
 void mainMenu(struct User u)
 {
@@ -91,7 +92,9 @@ void initMenu(struct User *u)
             else
             {
                 printf("\n\nAccount Created!");
+                sleep(2);
             }
+
             r = 1;
             break;
         case 3:

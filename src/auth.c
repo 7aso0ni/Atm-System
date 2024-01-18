@@ -1,5 +1,6 @@
 #include <termios.h>
 #include "header.h"
+#include <unistd.h>
 
 char *USERS = "./data/users.txt";
 
@@ -21,10 +22,12 @@ void loginMenu(char a[50], char pass[50])
     if (tcsetattr(fileno(stdin), TCSANOW, &nflags) != 0)
     {
         perror("tcsetattr");
-        return exit(1);
+        exit(1);
     }
     printf("\n\n\n\n\n\t\t\t\tEnter the password to login:");
+
     scanf("%s", pass);
+
     // fgets(pass, 50, stdin);
 
     // restore terminal
@@ -38,18 +41,15 @@ void loginMenu(char a[50], char pass[50])
 void registerMenu(char a[50], char pass[50])
 {
     struct termios oflags, nflags;
+    char newPass[50]; // Temporary buffer for the password
 
+    // Clear screen
     system("clear");
-    printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Register:");
+    printf("\n\n\n\t\t\t\t   ATM System\n\t\t\t\t\t User Registration:");
 
-    // Reading username
-    if (scanf("%49s", a) != 1)
-    {
-        fprintf(stderr, "Error reading input for 'a'\n");
-        return;
-    }
+    scanf("%49s", a); // Limit input to 49 characters to avoid buffer overflow
 
-    // Disabling echo
+    // Disabling echo for password input
     tcgetattr(fileno(stdin), &oflags);
     nflags = oflags;
     nflags.c_lflag &= ~ECHO;
@@ -58,25 +58,25 @@ void registerMenu(char a[50], char pass[50])
     if (tcsetattr(fileno(stdin), TCSANOW, &nflags) != 0)
     {
         perror("tcsetattr");
-        return;
+        exit(1);
     }
 
-    // Reading password
-    printf("\n\n\n\n\n\t\t\t\tEnter the password to Register:");
-    if (fgets(pass, 50, stdin) == NULL)
-    {
-        fprintf(stderr, "Error reading input for 'pass'\n");
-        return;
-    }
+    // Prompt for password
+    printf("\n\n\n\n\n\t\t\t\tEnter the password to login:");
+    scanf("%49s", newPass); // Use newPass to avoid direct writing to pass argument
 
-    // Restore terminal
+    // Restoring terminal settings
     if (tcsetattr(fileno(stdin), TCSANOW, &oflags) != 0)
     {
         perror("tcsetattr");
         exit(1);
     }
 
-    // TODO: save the user into the file.
+    // Copy the new password into the pass argument
+    strncpy(pass, newPass, 50);
+    pass[49] = '\0'; // Ensure null-termination
+
+    // TODO: save into the file
 }
 
 const char *getPassword(struct User u)
@@ -106,7 +106,7 @@ const char *getPassword(struct User u)
     return "no user found";
 }
 
-const char *getUsername(struct User u)
+char *getUsername(struct User u)
 {
     FILE *fp;
     struct User userChecker;
@@ -121,9 +121,15 @@ const char *getUsername(struct User u)
         if (strcmp(userChecker.name, u.name) == 0)
         {
             fclose(fp);
-            return strdup(userChecker.name); // this will duplicate the string and return it
+            char *duplicate = strdup(userChecker.name);
+            if (duplicate == NULL)
+            {
+                fprintf(stderr, "Memory allocation failed\n");
+                exit(1);
+            }
+            return duplicate;
         }
     }
     fclose(fp);
-    return NULL;
+    return "no user found";
 }
