@@ -42,8 +42,9 @@ void registerMenu(char a[50], char pass[50])
 {
     struct termios oflags, nflags;
     char newPass[50]; // Temporary buffer for the password
-
-    // Clear screen
+    int newID = 0;
+// Clear screen
+userExists:
     system("clear");
     printf("\n\n\n\t\t\t\t   ATM System\n\t\t\t\t\t User Registration:");
 
@@ -76,7 +77,40 @@ void registerMenu(char a[50], char pass[50])
     strncpy(pass, newPass, 50);
     pass[49] = '\0'; // Ensure null-termination
 
+    // check if user exists
+    if (strcmp(a, getUsername(a)) == 0)
+    {
+        printf("\nUser already exists\n");
+        printf("Please Choose another userame\n");
+        sleep(2);
+        goto userExists;
+    }
+
     // TODO: save into the file
+    FILE *fp;
+    struct User u;
+
+    fp = fopen("./data/users.txt", "a+");
+    if (fp == NULL)
+    {
+        printf("Error opening file\n");
+        exit(1);
+    }
+
+    while (fscanf(fp, "%d %s %s", &u.id, u.name, u.password) == 3)
+    {
+        newID = u.id;
+    }
+
+    if (newID == 0)
+    {
+        fprintf(fp, "%d %s %s", newID, a, pass);
+    }
+    else
+    {
+        fprintf(fp, "\n%d %s %s", newID + 1, a, pass);
+    }
+    fclose(fp);
 }
 
 const char *getPassword(struct User u)
@@ -90,15 +124,19 @@ const char *getPassword(struct User u)
         exit(1);
     }
 
-    while (fscanf(fp, "%s %s", userChecker.name, userChecker.password) != EOF)
+    while (fscanf(fp, "%d %s %s", &userChecker.id, userChecker.name, userChecker.password) != EOF)
     {
         if (strcmp(userChecker.name, u.name) == 0)
         {
             fclose(fp);
-            // UserChecker is a local variable and will be destroyed when the function returns
-            // making buff a dangling pointe
-            char *buff = userChecker.password;
-            return buff;
+
+            char *dup = strdup(userChecker.password);
+            if (dup == NULL)
+            {
+                fprintf(stderr, "Memory allocation failed\n");
+                exit(1);
+            }
+            return dup;
         }
     }
 
@@ -106,7 +144,7 @@ const char *getPassword(struct User u)
     return "no user found";
 }
 
-char *getUsername(struct User u)
+char *getUsername(char a[50])
 {
     FILE *fp;
     struct User userChecker;
@@ -116,9 +154,9 @@ char *getUsername(struct User u)
         printf("Error Opening a file\n");
         exit(1);
     }
-    while (fscanf(fp, "%s %s", userChecker.name, userChecker.password) == 2)
+    while (fscanf(fp, "%d %s %s", &userChecker.id, userChecker.name, userChecker.password) == 3)
     {
-        if (strcmp(userChecker.name, u.name) == 0)
+        if (strcmp(userChecker.name, a) == 0)
         {
             fclose(fp);
             char *duplicate = strdup(userChecker.name);

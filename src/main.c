@@ -82,19 +82,9 @@ void initMenu(struct User *u)
             r = 1;
             break;
         case 2:
-            // student TODO: add your **Registration** function
+        // student TODO: add your **Registration** function
+        userExists:
             registerMenu(u->name, u->password);
-            if (strcmp(u->name, getUsername(*u)) == 0)
-            {
-                printf("\nUser already exists");
-                exit(1);
-            }
-            else
-            {
-                printf("\n\nAccount Created!");
-                sleep(2);
-            }
-
             r = 1;
             break;
         case 3:
