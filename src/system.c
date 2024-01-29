@@ -1,4 +1,5 @@
 #include "header.h"
+#include <unistd.h>
 
 const char *RECORDS = "./data/records.txt";
 
@@ -101,6 +102,13 @@ void createNewAcc(struct User u)
     struct Record r;
     struct Record cr;
     char userName[50];
+
+    char accountTypeID;
+    int interestRate;
+    int month;
+    int day;
+    int year;
+
     FILE *pf = fopen(RECORDS, "a+");
 
 noAccount:
@@ -108,7 +116,14 @@ noAccount:
     printf("\t\t\t===== New record =====\n");
 
     printf("\nEnter today's date(mm/dd/yyyy):");
-    scanf("%d/%d/%d", &r.deposit.month, &r.deposit.day, &r.deposit.year);
+    scanf("%d/%d/%d", &month, &day, &year);
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2021)
+    {
+        printf("\n\n\n\n\t\t\t\tInvalid date!\n\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        goto noAccount;
+    }
     printf("\nEnter the account number:");
     scanf("%d", &r.accountNbr);
 
@@ -126,8 +141,40 @@ noAccount:
     scanf("%d", &r.phone);
     printf("\nEnter amount to deposit: $");
     scanf("%lf", &r.amount);
-    printf("\nChoose the type of account:\n\t-> saving\n\t-> current\n\t-> fixed01(for 1 year)\n\t-> fixed02(for 2 years)\n\t-> fixed03(for 3 years)\n\n\tEnter your choice:");
-    scanf("%s", r.accountType);
+invalidAccountType:
+    printf("\nChoose the type of account:\n\t1: saving\n\t2: current\n\t3: fixed01(for 1 year)\n\t4: fixed02(for 2 years)\n\t5: fixed03(for 3 years)\n\n\tEnter your choice:");
+    scanf("%s", &accountTypeID);
+    int num = atoi(&accountTypeID);
+    switch (num)
+    {
+    case 1:
+        strcpy(r.accountType, "saving");
+        interestRate = 0.17;
+        break;
+    case 2:
+        strcpy(r.accountType, "current");
+        printf("\nYou will not get interests because the account is of type current\n");
+        sleep(2);
+        break;
+    case 3:
+        strcpy(r.accountType, "fixed01");
+        interestRate = 0.14;
+        break;
+    case 4:
+        strcpy(r.accountType, "fixed02");
+        interestRate = 0.15;
+        break;
+    case 5:
+        strcpy(r.accountType, "fixed03");
+        interestRate = 0.18;
+        break;
+    default:
+        printf("\n\n\n\n\n\n\t\t\t\tInvalid Account Type\n");
+        printf("\t\t\t\tPlease Enter a valid type\n\n\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        goto invalidAccountType;
+    }
 
     saveAccountToFile(pf, u, r);
 
