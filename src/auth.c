@@ -2,12 +2,11 @@
 #include "header.h"
 #include <unistd.h>
 
-char *USERS = "./data/users.txt";
-
 void loginMenu(char a[50], char pass[50])
 {
     struct termios oflags, nflags;
 
+loginMenu:
     system("clear");
     printf("\n\n\n\t\t\t\t   Bank Management System\n\t\t\t\t\t User Login:");
     scanf("%s", a);
@@ -28,13 +27,33 @@ void loginMenu(char a[50], char pass[50])
 
     scanf("%s", pass);
 
-    // fgets(pass, 50, stdin);
-
     // restore terminal
     if (tcsetattr(fileno(stdin), TCSANOW, &oflags) != 0)
     {
         perror("tcsetattr");
         exit(1);
+    }
+
+    if (strcmp(a, getUsername(a)) != 0 || strcmp(pass, getPassword(pass)) != 0)
+    {
+        printf("\n\n\t\t\t\tIncorrect Username or Password\n");
+        printf("\t\t\t\tPlease Try Again\n");
+        sleep(2);
+        goto loginMenu;
+    }
+    else
+    {
+        struct User u;
+        if (getUserID(a) == -1)
+        {
+            printf("Error getting user id\n");
+            exit(1);
+        }
+        u.id = getUserID(a);
+        strcpy(u.name, getUsername(a));
+        strcpy(u.password, getPassword(pass));
+
+        success(u);
     }
 };
 
@@ -80,13 +99,12 @@ userExists:
     // check if user exists
     if (strcmp(a, getUsername(a)) == 0)
     {
-        printf("\nUser already exists\n");
-        printf("Please Choose another userame\n");
+        printf("\n\n\n\n\t\t\tUser already exists\n");
+        printf("\t\t\tPlease Choose another userame\n");
         sleep(2);
         goto userExists;
     }
 
-    // TODO: save into the file
     FILE *fp;
     struct User u;
 
@@ -102,7 +120,8 @@ userExists:
         newID = u.id;
     }
 
-    if (newID == 0)
+    fseek(fp, 0, SEEK_END);
+    if (ftell(fp) == 0) // if file is empty
     {
         fprintf(fp, "%d %s %s", newID, a, pass);
     }
@@ -110,10 +129,14 @@ userExists:
     {
         fprintf(fp, "\n%d %s %s", newID + 1, a, pass);
     }
+
+    fseek(fp, 0, SEEK_SET); // set the file pointer to the beginning of the file
     fclose(fp);
+
+    success(u);
 }
 
-const char *getPassword(struct User u)
+const char *getPassword(char pass[50])
 {
     FILE *fp;
     struct User userChecker;
@@ -124,12 +147,12 @@ const char *getPassword(struct User u)
         exit(1);
     }
 
-    while (fscanf(fp, "%d %s %s", &userChecker.id, userChecker.name, userChecker.password) != EOF)
+    while (fscanf(fp, "%d %s %s", &userChecker.id, userChecker.name, userChecker.password) == 3)
     {
-        if (strcmp(userChecker.name, u.name) == 0)
+        // if password is correct return the password
+        if (strcmp(userChecker.password, pass) == 0)
         {
             fclose(fp);
-
             char *dup = strdup(userChecker.password);
             if (dup == NULL)
             {
@@ -141,10 +164,10 @@ const char *getPassword(struct User u)
     }
 
     fclose(fp);
-    return "no user found";
+    return "Incorrect Password";
 }
 
-char *getUsername(char a[50])
+const char *getUsername(char a[50])
 {
     FILE *fp;
     struct User userChecker;
@@ -156,6 +179,8 @@ char *getUsername(char a[50])
     }
     while (fscanf(fp, "%d %s %s", &userChecker.id, userChecker.name, userChecker.password) == 3)
     {
+
+        // if username is correct return the username
         if (strcmp(userChecker.name, a) == 0)
         {
             fclose(fp);
@@ -170,4 +195,34 @@ char *getUsername(char a[50])
     }
     fclose(fp);
     return "no user found";
+}
+
+int getUserID(char a[50])
+{
+    FILE *fp;
+    struct User userChecker;
+
+    if ((fp = fopen("./data/users.txt", "r")) == NULL)
+    {
+        printf("Error Opening a file\n");
+        exit(1);
+    }
+    while (fscanf(fp, "%d %s %s", &userChecker.id, userChecker.name, userChecker.password) == 3)
+    {
+
+        // if username is correct return the username
+        if (strcmp(userChecker.name, a) == 0)
+        {
+            fclose(fp);
+            int duplicate = userChecker.id;
+            if (duplicate <= 0)
+            {
+                fprintf(stderr, "Something went wrong\n");
+                exit(1);
+            }
+            return duplicate;
+        }
+    }
+    fclose(fp);
+    return -1;
 }
