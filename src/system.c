@@ -117,26 +117,44 @@ noAccount:
 
     printf("\nEnter today's date(mm/dd/yyyy):");
     scanf("%d/%d/%d", &month, &day, &year);
-    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2021)
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2024)
     {
         printf("\n\n\n\n\t\t\t\tInvalid date!\n\n\n\n");
         fflush(stdout);
         sleep(2);
         goto noAccount;
     }
+    r.deposit.month = month;
+    r.deposit.day = day;
+    r.deposit.year = year;
+
+
+InvalidAccountNumber:
     printf("\nEnter the account number:");
     scanf("%d", &r.accountNbr);
+    if (r.accountNbr < 0 || r.accountNbr <= 1000000 || r.accountNbr >= 9999999) {
+        printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
+        printf("\t\t\t\tHas to be 7 digit number\n\n\n\n");
+        fflush(stdout);
+        sleep(3);
+        system("clear");
+        goto InvalidAccountNumber;
+    }
 
     while (getAccountFromFile(pf, userName, &cr))
     {
-        if (strcmp(userName, u.name) == 0 && cr.accountNbr == r.accountNbr)
+        if (strcmp(userName, u.name) == 0 || cr.accountNbr == r.accountNbr)
         {
-            printf("✖ This Account already exists for this user\n\n");
+            printf("\n\n\n\n\n\t\t\t✖ This Account already exists for this user\n\n\n");
+            fflush(stdout);
+            sleep(2);
             goto noAccount;
         }
     }
     printf("\nEnter the country:");
     scanf("%s", r.country);
+    
+
     printf("\nEnter the phone number:");
     scanf("%d", &r.phone);
     printf("\nEnter amount to deposit: $");
