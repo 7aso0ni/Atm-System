@@ -1,5 +1,7 @@
 #include "header.h"
 #include <unistd.h>
+#include <ctype.h>
+#include <stdbool.h>
 
 const char *RECORDS = "./data/records.txt";
 
@@ -105,10 +107,10 @@ void createNewAcc(struct User u)
 
     char accountTypeID;
     int interestRate;
-    int month;
-    int day;
-    int year;
-
+    char dateInStr[11]; // 10 characters for mm/dd/yyyy and 1 for the null terminator
+    char accNumInStr[8];
+    char phoneInStr[9];
+    char amountInStr[100];
     FILE *pf = fopen(RECORDS, "a+");
 
 noAccount:
@@ -116,10 +118,21 @@ noAccount:
     printf("\t\t\t===== New record =====\n");
 
     printf("\nEnter today's date(mm/dd/yyyy):");
-    scanf("%d/%d/%d", &month, &day, &year);
+    scanf("%s", dateInStr);
+    int month, day, year;
+    int assigned = sscanf(dateInStr, "%d/%d/%d", &month, &day, &year);
+
+    if (assigned < 3)
+    {
+        printf("\n\n\n\n\n\t\t\tIncorrect date format. Please use mm/dd/yyyy.\n\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        goto noAccount;
+    }
+
     if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2024)
     {
-        printf("\n\n\n\n\t\t\t\tInvalid date!\n\n\n\n");
+        printf("\n\n\n\n\n\t\t\t\tInvalid date!\n\n\n\n");
         fflush(stdout);
         sleep(2);
         goto noAccount;
@@ -128,11 +141,21 @@ noAccount:
     r.deposit.day = day;
     r.deposit.year = year;
 
-
 InvalidAccountNumber:
     printf("\nEnter the account number:");
-    scanf("%d", &r.accountNbr);
-    if (r.accountNbr < 0 || r.accountNbr <= 1000000 || r.accountNbr >= 9999999) {
+    scanf("%s", &accNumInStr);
+    if (hasNonDigitChars(accNumInStr))
+    {
+        printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        system("clear");
+        goto InvalidAccountNumber;
+    }
+    r.accountNbr = atoi(accNumInStr);
+
+    if (r.accountNbr < 0 || r.accountNbr < 1000000 || r.accountNbr > 9999999)
+    {
         printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
         printf("\t\t\t\tHas to be 7 digit number\n\n\n\n");
         fflush(stdout);
@@ -143,22 +166,64 @@ InvalidAccountNumber:
 
     while (getAccountFromFile(pf, userName, &cr))
     {
-        if (strcmp(userName, u.name) == 0 || cr.accountNbr == r.accountNbr)
+        if (strcmp(userName, u.name) == 0 && cr.accountNbr == r.accountNbr)
         {
             printf("\n\n\n\n\n\t\t\t✖ This Account already exists for this user\n\n\n");
             fflush(stdout);
             sleep(2);
-            goto noAccount;
+            system("clear");
+            goto InvalidAccountNumber;
         }
     }
     printf("\nEnter the country:");
     scanf("%s", r.country);
-    
 
+InvalidPhoneNumber:
     printf("\nEnter the phone number:");
-    scanf("%d", &r.phone);
+    scanf("%s", &phoneInStr);
+    if (hasNonDigitChars(phoneInStr))
+    {
+        printf("\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        system("clear");
+        goto InvalidPhoneNumber;
+    }
+
+    r.phone = atoi(phoneInStr);
+    if (r.phone < 9999999 || r.phone > 100000000)
+    {
+        printf("\n\n\n\n\t\t\t\tInvalid Phone Number!\n");
+        printf("\t\t\t\tHas to be 8 digit number\n\n\n\n");
+        fflush(stdout);
+        sleep(3);
+        system("clear");
+        goto InvalidPhoneNumber;
+    }
+InvalidAmount:
     printf("\nEnter amount to deposit: $");
-    scanf("%lf", &r.amount);
+    scanf("%s", &amountInStr);
+
+    if (hasNonDigitChars(amountInStr))
+    {
+        printf("\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        system("clear");
+        goto InvalidAmount;
+    }
+    r.amount = atof(amountInStr);
+
+    if (r.amount < 0 || r.amount > 10000000)
+    {
+        printf("\n\n\n\n\n\t\t\t\tInvalid amount\n\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        system("clear");
+        goto InvalidAmount;
+    }
+
+    sprintf(amountInStr, "%.2f", r.amount);
 invalidAccountType:
     printf("\nChoose the type of account:\n\t1: saving\n\t2: current\n\t3: fixed01(for 1 year)\n\t4: fixed02(for 2 years)\n\t5: fixed03(for 3 years)\n\n\tEnter your choice:");
     scanf("%s", &accountTypeID);
@@ -227,4 +292,18 @@ void checkAllAccounts(struct User u)
     }
     fclose(pf);
     success(u);
+}
+
+// methods
+bool hasNonDigitChars(const char *str)
+{
+    while (*str)
+    {
+        if (!isdigit((unsigned char)*str))
+        {
+            return true;
+        }
+        str++;
+    }
+    return false;
 }
