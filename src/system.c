@@ -2,6 +2,10 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 const char *RECORDS = "./data/records.txt";
 
@@ -23,7 +27,8 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
 
 void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
 {
-    fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n\n",
+
+    fprintf(ptr, "%d %d %s %d %d/%d/%d %s %d %.2lf %s\n",
             r.id,
             u.id,
             u.name,
@@ -119,6 +124,15 @@ noAccount:
 
     printf("\nEnter today's date(mm/dd/yyyy):");
     scanf("%s", dateInStr);
+    if (hasNonDigitChars(dateInStr, true))
+    {
+        printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        system("clear");
+        goto noAccount;
+    }
+
     int month, day, year;
     int assigned = sscanf(dateInStr, "%d/%d/%d", &month, &day, &year);
 
@@ -144,7 +158,7 @@ noAccount:
 InvalidAccountNumber:
     printf("\nEnter the account number:");
     scanf("%s", &accNumInStr);
-    if (hasNonDigitChars(accNumInStr))
+    if (hasNonDigitChars(accNumInStr, false))
     {
         printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
         fflush(stdout);
@@ -154,10 +168,20 @@ InvalidAccountNumber:
     }
     r.accountNbr = atoi(accNumInStr);
 
-    if (r.accountNbr < 0 || r.accountNbr < 1000000 || r.accountNbr > 9999999)
+    if (r.accountNbr < 0)
     {
         printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
-        printf("\t\t\t\tHas to be 7 digit number\n\n\n\n");
+        printf("\t\t\t\tHas to be a positive number\n\n\n\n");
+        fflush(stdout);
+        sleep(3);
+        system("clear");
+        goto InvalidAccountNumber;
+    }
+
+    if (r.accountNbr < 1000000 || r.accountNbr > 9999999)
+    {
+        printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
+        printf("\t\t\t\tHas to be 7 digits\n\n\n\n");
         fflush(stdout);
         sleep(3);
         system("clear");
@@ -181,7 +205,7 @@ InvalidAccountNumber:
 InvalidPhoneNumber:
     printf("\nEnter the phone number:");
     scanf("%s", &phoneInStr);
-    if (hasNonDigitChars(phoneInStr))
+    if (hasNonDigitChars(phoneInStr, false))
     {
         printf("\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
         fflush(stdout);
@@ -204,7 +228,7 @@ InvalidAmount:
     printf("\nEnter amount to deposit: $");
     scanf("%s", &amountInStr);
 
-    if (hasNonDigitChars(amountInStr))
+    if (hasNonDigitChars(amountInStr, false))
     {
         printf("\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
         fflush(stdout);
@@ -227,6 +251,16 @@ InvalidAmount:
 invalidAccountType:
     printf("\nChoose the type of account:\n\t1: saving\n\t2: current\n\t3: fixed01(for 1 year)\n\t4: fixed02(for 2 years)\n\t5: fixed03(for 3 years)\n\n\tEnter your choice:");
     scanf("%s", &accountTypeID);
+
+    if (hasNonDigitChars(&accountTypeID, false))
+    {
+        printf("\n\n\n\n\t\t\tOnly numbers are allowed.\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        system("clear");
+        goto invalidAccountType;
+    }
+
     int num = atoi(&accountTypeID);
     switch (num)
     {
@@ -256,13 +290,96 @@ invalidAccountType:
         printf("\t\t\t\tPlease Enter a valid type\n\n\n\n\n");
         fflush(stdout);
         sleep(2);
+        system("clear");
         goto invalidAccountType;
     }
+
+    // TODO: make it fixed digits. currently it is not
+    r.id = generateUniqueRecordID();
 
     saveAccountToFile(pf, u, r);
 
     fclose(pf);
     success(u);
+}
+
+void updateAccountInfo(struct User u)
+{
+    struct Record r;
+    struct Record cr;
+
+    FILE *originalFile = fopen(RECORDS, "r");
+    FILE *tempFile = fopen("./data/temp.txt", "w");
+
+    if (originalFile == NULL || tempFile == NULL)
+    {
+        printf("Error opening file\n");
+        exit(1);
+    }
+
+    int changeType;
+    char newAccNumInStr[50];
+    char userName[50];
+
+InvalidAccountNumber:
+    printf("\n\n\t\t\t===== Update Account =====\n");
+    printf("\n\nEnter the following number to change: \n\n\t1: Account number\n\t2: Country\n\t3: Phone number\n\t4: Amount\n\t5: Account type\n\n\tEnter your choice:");
+    scanf("%d", &changeType);
+    switch (changeType)
+    {
+    case 1:
+        printf("\nEnter the account number:");
+        scanf("%s", &newAccNumInStr);
+        if (hasNonDigitChars(newAccNumInStr, false))
+        {
+            printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
+            fflush(stdout);
+            sleep(2);
+            system("clear");
+            goto InvalidAccountNumber;
+        }
+        r.accountNbr = atoi(newAccNumInStr);
+
+        if (r.accountNbr < 0)
+        {
+            printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
+            printf("\t\t\t\tHas to be a positive number\n\n\n\n");
+            fflush(stdout);
+            sleep(3);
+            system("clear");
+            goto InvalidAccountNumber;
+        }
+
+        if (r.accountNbr < 1000000 || r.accountNbr > 9999999)
+        {
+            printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
+            printf("\t\t\t\tHas to be 7 digits\n\n\n\n");
+            fflush(stdout);
+            sleep(3);
+            system("clear");
+            goto InvalidAccountNumber;
+        }
+
+        while (getAccountFromFile(originalFile, userName, &cr))
+        {
+            if (strcmp(userName, u.name) == 0 && cr.accountNbr == r.accountNbr)
+            {
+                printf("\n\n\n\n\n\t\t\t✖ This Account already exists for this user\n\n\n");
+                fflush(stdout);
+                sleep(2);
+                system("clear");
+                goto InvalidAccountNumber;
+            }
+        }
+        break;
+    case 2:
+    default:
+        printf("\n\n\n\n\n\t\t\t\tInvalid Type!\n\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        system("clear");
+        goto InvalidAccountNumber;
+    }
 }
 
 void checkAllAccounts(struct User u)
@@ -295,15 +412,37 @@ void checkAllAccounts(struct User u)
 }
 
 // methods
-bool hasNonDigitChars(const char *str)
+bool hasNonDigitChars(const char *str, bool allowSlash)
 {
     while (*str)
     {
-        if (!isdigit((unsigned char)*str))
+        if (!isdigit((unsigned char)*str) && *str != '-' && (!allowSlash || *str != '/'))
         {
             return true;
         }
         str++;
     }
     return false;
+}
+
+int generateUniqueRecordID()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    // Use the current timestamp (seconds since epoch)
+    int uniqueID = (int)tv.tv_sec;
+
+    // Add microseconds to make it more unique
+    uniqueID = uniqueID * 1000000 + (int)tv.tv_usec;
+
+    // Add process ID to further ensure uniqueness
+    uniqueID = uniqueID * 1000 + getpid();
+
+    // Add a counter to handle cases where IDs are generated rapidly
+    static int counter = 0;
+    uniqueID = uniqueID * 1000 + counter;
+    counter++;
+
+    return abs(uniqueID);
 }

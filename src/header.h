@@ -38,8 +38,10 @@ const char *getUsername(char a[50]);
 int getUserID(char a[50]);
 
 // system function
-void createNewAcc(struct User u);
 void mainMenu(struct User u);
+void createNewAcc(struct User u);
+void updateAccountInfo(struct User u);
 void checkAllAccounts(struct User u);
 void success(struct User u);
-bool hasNonDigitChars(const char *str);
+bool hasNonDigitChars(const char *str, bool allowSlash);
+int generateUniqueRecordID();
