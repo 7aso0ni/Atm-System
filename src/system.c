@@ -307,6 +307,8 @@ void updateAccountInfo(struct User u)
 {
     struct Record r;
     struct Record cr;
+    struct Record accounts[100];
+    int accountCount = 0;
 
     FILE *originalFile = fopen(RECORDS, "r");
     FILE *tempFile = fopen("./data/temp.txt", "w");
@@ -317,69 +319,117 @@ void updateAccountInfo(struct User u)
         exit(1);
     }
 
+    char accountIDStr[50];
+    int accountID;
     int changeType;
     char newAccNumInStr[50];
     char userName[50];
 
-InvalidAccountNumber:
-    printf("\n\n\t\t\t===== Update Account =====\n");
-    printf("\n\nEnter the following number to change: \n\n\t1: Account number\n\t2: Country\n\t3: Phone number\n\t4: Amount\n\t5: Account type\n\n\tEnter your choice:");
-    scanf("%d", &changeType);
-    switch (changeType)
+InvalidID:
+    printf("\n\n\n\t\tEnter the ID of the account you want to update:");
+    scanf("%s", accountIDStr);
+    if (hasNonDigitChars(accountIDStr, false))
     {
-    case 1:
-        printf("\nEnter the account number:");
-        scanf("%s", &newAccNumInStr);
-        if (hasNonDigitChars(newAccNumInStr, false))
-        {
-            printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
-            fflush(stdout);
-            sleep(2);
-            system("clear");
-            goto InvalidAccountNumber;
-        }
-        r.accountNbr = atoi(newAccNumInStr);
+        printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
+        fflush(stdout);
+        sleep(2);
+        system("clear");
+        goto InvalidID;
+    }
 
-        if (r.accountNbr < 0)
-        {
-            printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
-            printf("\t\t\t\tHas to be a positive number\n\n\n\n");
-            fflush(stdout);
-            sleep(3);
-            system("clear");
-            goto InvalidAccountNumber;
-        }
+    accountID = atoi(accountIDStr);
 
-        if (r.accountNbr < 1000000 || r.accountNbr > 9999999)
+    while (getAccountFromFile(originalFile, userName, &accounts[accountCount]))
+    {
+        if (accountID == accounts[accountCount].id && strcmp(u.name, userName) == 0)
         {
-            printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
-            printf("\t\t\t\tHas to be 7 digits\n\n\n\n");
-            fflush(stdout);
-            sleep(3);
-            system("clear");
-            goto InvalidAccountNumber;
-        }
-
-        while (getAccountFromFile(originalFile, userName, &cr))
-        {
-            if (strcmp(userName, u.name) == 0 && cr.accountNbr == r.accountNbr)
+        InvalidAccountNumber:
+            printf("\n\n\t\t\t===== Update Account =====\n");
+            printf("\n\nEnter the following number to change: \n\n\t1: Account number\n\t2: Country\n\t3: Phone number\n\t4: Amount\n\t5: Account type\n\n\tEnter your choice:");
+            scanf("%d", &changeType);
+            switch (changeType)
             {
-                printf("\n\n\n\n\n\t\t\t✖ This Account already exists for this user\n\n\n");
+            case 1:
+                printf("\nEnter the account number:");
+                scanf("%s", &newAccNumInStr);
+                if (hasNonDigitChars(newAccNumInStr, false))
+                {
+                    printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
+                    fflush(stdout);
+                    sleep(2);
+                    system("clear");
+                    goto InvalidAccountNumber;
+                }
+                accounts[accountCount].accountNbr = atoi(newAccNumInStr);
+
+                if (accounts[accountCount].accountNbr < 0)
+                {
+                    printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
+                    printf("\t\t\t\tHas to be a positive number\n\n\n\n");
+                    fflush(stdout);
+                    sleep(3);
+                    system("clear");
+                    goto InvalidAccountNumber;
+                }
+
+                if (accounts[accountCount].accountNbr < 1000000 || accounts[accountCount].accountNbr > 9999999)
+                {
+                    printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
+                    printf("\t\t\t\tHas to be 7 digits\n\n\n\n");
+                    fflush(stdout);
+                    sleep(3);
+                    system("clear");
+                    goto InvalidAccountNumber;
+                }
+
+                while (getAccountFromFile(originalFile, userName, &cr))
+                {
+                    if (strcmp(userName, u.name) == 0 && cr.accountNbr == accounts[accountCount].accountNbr)
+                    {
+                        printf("\n\n\n\n\n\t\t\t✖ This Account already exists for this user\n\n\n");
+                        fflush(stdout);
+                        sleep(2);
+                        system("clear");
+                        goto InvalidAccountNumber;
+                    }
+                }
+                break;
+
+            default:
+                printf("\n\n\n\n\n\t\t\t\tInvalid Type!\n\n\n\n");
                 fflush(stdout);
                 sleep(2);
                 system("clear");
                 goto InvalidAccountNumber;
             }
         }
-        break;
-    case 2:
-    default:
-        printf("\n\n\n\n\n\t\t\t\tInvalid Type!\n\n\n\n");
-        fflush(stdout);
-        sleep(2);
-        system("clear");
-        goto InvalidAccountNumber;
+        else
+        {
+            printf("\n\n\n\n\n\t\t\t✖ Record not found!!\n\n\n");
+            fflush(stdout);
+            sleep(2);
+            system("clear");
+            goto InvalidID;
+        }
+
+        if (accountCount <= 99)
+        {
+            accountCount++;
+        }
     }
+
+    for (int i = 0; i <= accountCount; i++)
+    {
+        saveAccountToFile(tempFile, u, accounts[i]);
+    }
+
+    fclose(originalFile);
+    fclose(tempFile);
+
+    remove("./data/records.txt");
+    rename("./data/temp.txt", "./data/records.txt");
+
+    success(u);
 }
 
 void checkAllAccounts(struct User u)
