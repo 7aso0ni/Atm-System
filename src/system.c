@@ -309,6 +309,7 @@ void updateAccountInfo(struct User u)
     struct Record records[100]; // Assuming a maximum of 100 records for simplicity
     struct Record record;
 
+    char accType[20]; // save account type of modified user account
     char input[50];
     int accountId;
     char userName[50];
@@ -332,11 +333,11 @@ void updateAccountInfo(struct User u)
 
         while (getAccountFromFile(fp, userName, &record))
         {
-            printf("Account Type: %s\n", record.accountType);
             strcpy(record.name, userName); // Store the user's name in the record
             records[totalRecords] = record;
             if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
             {
+                strcpy(accType, record.accountType);
                 foundIndex = totalRecords;
                 found = true;
             }
@@ -429,14 +430,16 @@ invaildChoice:
         return;
     }
 
-    printf("acc type: %s\n", records[foundIndex].accountType);
-
     for (int i = 0; i < totalRecords; i++)
     {
         struct User tempUser; // Temporary User to pass the correct name to saveAccountToFile
         strcpy(tempUser.name, records[i].name);
         tempUser.id = records[i].userId; // Assuming you have a userId field
-        // ... copy other necessary User fields ...
+        // ... copy other necessary User fields if there are any ...
+        if (foundIndex == i)
+        {
+            strcpy(records[i].accountType, accType);
+        }
         saveAccountToFile(fp, tempUser, records[i]);
     }
     fclose(fp);
