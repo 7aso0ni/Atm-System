@@ -305,130 +305,142 @@ invalidAccountType:
 
 void updateAccountInfo(struct User u)
 {
-    struct Record r;
-    struct Record cr;
-    struct Record accounts[100];
-    int accountCount = 0;
+    FILE *fp;
+    struct Record records[100]; // Assuming a maximum of 100 records for simplicity
+    struct Record record;
 
-    FILE *originalFile = fopen(RECORDS, "r");
-    FILE *tempFile = fopen("./data/temp.txt", "w");
-
-    if (originalFile == NULL || tempFile == NULL)
-    {
-        printf("Error opening file\n");
-        exit(1);
-    }
-
-    char accountIDStr[50];
-    int accountID;
-    int changeType;
-    char newAccNumInStr[50];
+    char input[50];
+    int accountId;
     char userName[50];
+    int totalRecords = 0;
+    int foundIndex = -1;
 
-InvalidID:
-    printf("\n\n\n\t\tEnter the ID of the account you want to update:");
-    scanf("%s", accountIDStr);
-    if (hasNonDigitChars(accountIDStr, false))
+    while (foundIndex == -1)
     {
-        printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
-        fflush(stdout);
-        sleep(2);
-        system("clear");
-        goto InvalidID;
+        printf("Enter the account ID you want to update:");
+        scanf("%s", input);
+
+        accountId = atoi(input); // Convert string to int
+        fp = fopen(RECORDS, "r");
+        if (fp == NULL)
+        {
+            printf("Error opening file!\n");
+            return;
+        }
+        totalRecords = 0;
+        bool found = false;
+
+        while (getAccountFromFile(fp, userName, &record))
+        {
+            printf("Account Type: %s\n", record.accountType);
+            strcpy(record.name, userName); // Store the user's name in the record
+            records[totalRecords] = record;
+            if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
+            {
+                foundIndex = totalRecords;
+                found = true;
+            }
+            totalRecords++;
+        }
+        fclose(fp);
+
+        if (!found)
+        {
+            printf("This account does not exist\n");
+            sleep(3);
+        }
     }
 
-    accountID = atoi(accountIDStr);
+invaildChoice:
+    printf("Select the field to update:\n 1: Country\n 2: Phone number\n");
+    int choice;
+    scanf("%d", &choice);
 
-    while (getAccountFromFile(originalFile, userName, &accounts[accountCount]))
+    switch (choice)
     {
-        if (accountID == accounts[accountCount].id && strcmp(u.name, userName) == 0)
+    case 1:
+    invalidCountry:
+        printf("Enter new country: ");
+        scanf("%s", records[foundIndex].country);
+        // Validate country name
+        if (strlen(records[foundIndex].country) < 2 || strlen(records[foundIndex].country) > 99)
         {
-        InvalidAccountNumber:
-            printf("\n\n\t\t\t===== Update Account =====\n");
-            printf("\n\nEnter the following number to change: \n\n\t1: Account number\n\t2: Country\n\t3: Phone number\n\t4: Amount\n\t5: Account type\n\n\tEnter your choice:");
-            scanf("%d", &changeType);
-            switch (changeType)
+            printf("Invalid country name! Country name should be between 2 and 99 characters.\n");
+            fflush(stdout);
+            sleep(3);
+            goto invalidCountry;
+        }
+        // Check if country name contains any digits
+        for (int i = 0; records[foundIndex].country[i]; i++)
+        {
+            if (isdigit(records[foundIndex].country[i]))
             {
-            case 1:
-                printf("\nEnter the account number:");
-                scanf("%s", &newAccNumInStr);
-                if (hasNonDigitChars(newAccNumInStr, false))
-                {
-                    printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
-                    fflush(stdout);
-                    sleep(2);
-                    system("clear");
-                    goto InvalidAccountNumber;
-                }
-                accounts[accountCount].accountNbr = atoi(newAccNumInStr);
-
-                if (accounts[accountCount].accountNbr < 0)
-                {
-                    printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
-                    printf("\t\t\t\tHas to be a positive number\n\n\n\n");
-                    fflush(stdout);
-                    sleep(3);
-                    system("clear");
-                    goto InvalidAccountNumber;
-                }
-
-                if (accounts[accountCount].accountNbr < 1000000 || accounts[accountCount].accountNbr > 9999999)
-                {
-                    printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
-                    printf("\t\t\t\tHas to be 7 digits\n\n\n\n");
-                    fflush(stdout);
-                    sleep(3);
-                    system("clear");
-                    goto InvalidAccountNumber;
-                }
-
-                while (getAccountFromFile(originalFile, userName, &cr))
-                {
-                    if (strcmp(userName, u.name) == 0 && cr.accountNbr == accounts[accountCount].accountNbr)
-                    {
-                        printf("\n\n\n\n\n\t\t\t✖ This Account already exists for this user\n\n\n");
-                        fflush(stdout);
-                        sleep(2);
-                        system("clear");
-                        goto InvalidAccountNumber;
-                    }
-                }
-                break;
-
-            default:
-                printf("\n\n\n\n\n\t\t\t\tInvalid Type!\n\n\n\n");
+                printf("Invalid country name! Country name should not contain any digits.\n");
                 fflush(stdout);
-                sleep(2);
-                system("clear");
-                goto InvalidAccountNumber;
+                sleep(3);
+                goto invalidCountry;
             }
         }
-        else
+        break;
+
+    case 2:
+    invalidPhoneNumber:
+        printf("Enter new phone number: ");
+        scanf("%ld", &records[foundIndex].phone);
+        // Validate phone number
+        if (records[foundIndex].phone < 9999999 || records[foundIndex].phone > 100000000)
         {
-            printf("\n\n\n\n\n\t\t\t✖ Record not found!!\n\n\n");
+            printf("Invalid phone number! Phone number should be a exactly 8 digits.\n");
             fflush(stdout);
-            sleep(2);
+            sleep(3);
             system("clear");
-            goto InvalidID;
+            goto invalidPhoneNumber;
         }
-
-        if (accountCount <= 99)
+        // Check if phone number contains any letters
+        char phoneNumberString[20];
+        sprintf(phoneNumberString, "%ld", records[foundIndex].phone);
+        for (int i = 0; phoneNumberString[i]; i++)
         {
-            accountCount++;
+            if (isalpha(phoneNumberString[i]))
+            {
+                printf("Invalid phone number! Phone number should not contain any letters.\n");
+                fflush(stdout);
+                sleep(3);
+                system("clear");
+                goto invalidPhoneNumber;
+            }
         }
+        break;
+
+    default:
+        printf("Invalid choice!\n Please enter a valid choice\n");
+        fflush(stdout);
+        sleep(3);
+        system("clear");
+        goto invaildChoice;
     }
 
-    for (int i = 0; i <= accountCount; i++)
+    // Write the entire array back to the file
+    fp = fopen(RECORDS, "w");
+    if (fp == NULL)
     {
-        saveAccountToFile(tempFile, u, accounts[i]);
+        printf("Error opening file!\n");
+        sleep(5);
+        return;
     }
 
-    fclose(originalFile);
-    fclose(tempFile);
+    printf("acc type: %s\n", records[foundIndex].accountType);
 
-    remove("./data/records.txt");
-    rename("./data/temp.txt", "./data/records.txt");
-
+    for (int i = 0; i < totalRecords; i++)
+    {
+        struct User tempUser; // Temporary User to pass the correct name to saveAccountToFile
+        strcpy(tempUser.name, records[i].name);
+        tempUser.id = records[i].userId; // Assuming you have a userId field
+        // ... copy other necessary User fields ...
+        saveAccountToFile(fp, tempUser, records[i]);
+    }
+    fclose(fp);
+    printf("Account information updated successfully!\n");
     success(u);
 }
 
