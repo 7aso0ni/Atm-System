@@ -470,6 +470,101 @@ invaildChoice:
     success(u);
 }
 
+void checkAccountDetails(struct User u)
+{
+    FILE *fp;
+    struct Record records[100]; // Assuming a maximum of 100 records for simplicity
+    struct Record record;
+
+    char input[50];
+    int accountId;
+    char userName[50];
+    int totalRecords = 0;
+    int foundIndex = -1;
+
+    while (foundIndex == -1)
+    {
+        printf("Enter the account ID you want to check:");
+        scanf("%s", input);
+
+        accountId = atoi(input); // Convert string to int
+        fp = fopen(RECORDS, "r");
+        if (fp == NULL)
+        {
+            printf("Error opening file!\n");
+            return;
+        }
+        totalRecords = 0;
+        bool found = false;
+
+        while (getAccountFromFile(fp, userName, &record))
+        {
+            strcpy(record.name, userName); // Store the user's name in the record
+            records[totalRecords] = record;
+            if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
+            {
+                foundIndex = totalRecords;
+                found = true;
+            }
+            totalRecords++;
+        }
+        fclose(fp);
+
+        if (!found)
+        {
+            printf("This account does not exist\n");
+            sleep(3);
+        }
+    }
+
+    // Calculate interest rate
+    double interestAmount;
+    int yearFromDeposit;
+
+    printf("==============Account details=================\n");
+    printf("Account number: %d\n", records[foundIndex].accountNbr);
+    printf("Deposit date: %d/%d/%d\n", records[foundIndex].deposit.month, records[foundIndex].deposit.day, records[foundIndex].deposit.year);
+    printf("Country: %s\n", records[foundIndex].country);
+    printf("Phone number: %d\n", records[foundIndex].phone);
+    printf("Amount deposited: $%.2f\n", records[foundIndex].amount);
+    printf("Type of account: %s\n", records[foundIndex].accountType);
+
+    if (strcmp(records[foundIndex].accountType, "saving") == 0)
+    {
+        // calculate monthly interest rate
+        yearFromDeposit = records[foundIndex].deposit.year;
+        interestAmount = (records[foundIndex].amount * 0.07 / 12);
+        printf("You will gain $%.2lf of interest on day 10 of every month.\n", interestAmount);
+    }
+    else if (strcmp(records[foundIndex].accountType, "fixed01") == 0)
+    {
+        // calculate 1 year from account creation
+        yearFromDeposit = records[foundIndex].deposit.year + 1;
+        interestAmount = records[foundIndex].amount * 0.04;
+        printf("You will gain $%.2lf interest on %02d/%02d/%04d (1 year from account creation).\n", interestAmount, record.deposit.month, record.deposit.day, yearFromDeposit);
+    }
+    else if (strcmp(records[foundIndex].accountType, "fixed02") == 0)
+    {
+        // calculate 2 years from account creation
+        yearFromDeposit = records[foundIndex].deposit.year + 2;
+        interestAmount = (records[foundIndex].amount * 0.05 * 2);
+        printf("You will gain $%.2lf interest on %02d/%02d/%04d (2 year from account creation).\n", interestAmount, record.deposit.month, record.deposit.day, yearFromDeposit);
+    }
+    else if (strcmp(records[foundIndex].accountType, "fixed03") == 0)
+    {
+        // calculate 3 years from account creation
+        yearFromDeposit = records[foundIndex].deposit.year + 3;
+        interestAmount = records[foundIndex].amount * 0.08 * 3;
+        printf("You will gain $%.2lf interest on %02d/%02d/%04d (3 year from account creation).\n", interestAmount, record.deposit.month, record.deposit.day, yearFromDeposit);
+    }
+    else
+    {
+        printf("You will not get any interest because the account is of type current\n");
+    }
+    sleep(5);
+    success(u);
+}
+
 void checkAllAccounts(struct User u)
 {
     char userName[100];

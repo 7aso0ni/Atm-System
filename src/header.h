@@ -41,6 +41,7 @@ int getUserID(char a[50]);
 void mainMenu(struct User u);
 void createNewAcc(struct User u);
 void updateAccountInfo(struct User u);
+void checkAccountDetails(struct User u);
 void checkAllAccounts(struct User u);
 void success(struct User u);
 bool hasNonDigitChars(const char *str, bool allowSlash, bool allowDot);
