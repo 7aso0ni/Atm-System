@@ -115,6 +115,7 @@ void createNewAcc(struct User u)
     char dateInStr[11]; // 10 characters for mm/dd/yyyy and 1 for the null terminator
     char accNumInStr[8];
     char phoneInStr[9];
+    // float amount;
     char amountInStr[100];
     FILE *pf = fopen(RECORDS, "a+");
 
@@ -124,7 +125,7 @@ noAccount:
 
     printf("\nEnter today's date(mm/dd/yyyy):");
     scanf("%s", dateInStr);
-    if (hasNonDigitChars(dateInStr, true))
+    if (hasNonDigitChars(dateInStr, true, false))
     {
         printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
         fflush(stdout);
@@ -158,7 +159,7 @@ noAccount:
 InvalidAccountNumber:
     printf("\nEnter the account number:");
     scanf("%s", &accNumInStr);
-    if (hasNonDigitChars(accNumInStr, false))
+    if (hasNonDigitChars(accNumInStr, false, false))
     {
         printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
         fflush(stdout);
@@ -199,13 +200,34 @@ InvalidAccountNumber:
             goto InvalidAccountNumber;
         }
     }
+InvalidCountry:
     printf("\nEnter the country:");
     scanf("%s", r.country);
+
+    if (!hasNonDigitChars(r.country, false, false))
+    {
+        printf("\n\n\n\n\t\t\t\tInvalid Country Name!\n");
+        printf("\t\t\t\tHas to be a string\n\n\n\n");
+        fflush(stdout);
+        sleep(3);
+        system("clear");
+        goto InvalidCountry;
+    }
+
+    if (strlen(r.country) < 2 || strlen(r.country) > 99)
+    {
+        printf("\n\n\n\n\t\t\t\tInvalid Country Name!\n");
+        printf("\t\t\t\tHas to be between 2 and 99 characters\n\n\n\n");
+        fflush(stdout);
+        sleep(3);
+        system("clear");
+        goto InvalidCountry;
+    }
 
 InvalidPhoneNumber:
     printf("\nEnter the phone number:");
     scanf("%s", &phoneInStr);
-    if (hasNonDigitChars(phoneInStr, false))
+    if (hasNonDigitChars(phoneInStr, false, false))
     {
         printf("\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
         fflush(stdout);
@@ -228,7 +250,7 @@ InvalidAmount:
     printf("\nEnter amount to deposit: $");
     scanf("%s", &amountInStr);
 
-    if (hasNonDigitChars(amountInStr, false))
+    if (hasNonDigitChars(amountInStr, false, true))
     {
         printf("\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
         fflush(stdout);
@@ -236,6 +258,7 @@ InvalidAmount:
         system("clear");
         goto InvalidAmount;
     }
+
     r.amount = atof(amountInStr);
 
     if (r.amount < 0 || r.amount > 10000000)
@@ -252,7 +275,7 @@ invalidAccountType:
     printf("\nChoose the type of account:\n\t1: saving\n\t2: current\n\t3: fixed01(for 1 year)\n\t4: fixed02(for 2 years)\n\t5: fixed03(for 3 years)\n\n\tEnter your choice:");
     scanf("%s", &accountTypeID);
 
-    if (hasNonDigitChars(&accountTypeID, false))
+    if (hasNonDigitChars(&accountTypeID, false, false))
     {
         printf("\n\n\n\n\t\t\tOnly numbers are allowed.\n\n\n");
         fflush(stdout);
@@ -477,11 +500,11 @@ void checkAllAccounts(struct User u)
 }
 
 // methods
-bool hasNonDigitChars(const char *str, bool allowSlash)
+bool hasNonDigitChars(const char *str, bool allowSlash, bool allowDot)
 {
     while (*str)
     {
-        if (!isdigit((unsigned char)*str) && *str != '-' && (!allowSlash || *str != '/'))
+        if (!isdigit((unsigned char)*str) && *str != '-' && (!allowSlash || *str != '/') && (!allowDot || *str != '.'))
         {
             return true;
         }

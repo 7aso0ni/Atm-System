@@ -43,5 +43,5 @@ void createNewAcc(struct User u);
 void updateAccountInfo(struct User u);
 void checkAllAccounts(struct User u);
 void success(struct User u);
-bool hasNonDigitChars(const char *str, bool allowSlash);
+bool hasNonDigitChars(const char *str, bool allowSlash, bool allowDot);
 int generateUniqueRecordID();
