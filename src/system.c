@@ -25,6 +25,22 @@ int getAccountFromFile(FILE *ptr, char name[50], struct Record *r)
                   r->accountType) != EOF;
 }
 
+int getAccountFromFileByAccountID(FILE *ptr, struct Record *r)
+{
+    return fscanf(ptr, "%d %d %s %d %d/%d/%d %s %d %lf %s",
+                  &r->id,
+                  &r->userId,
+                  r->name,
+                  &r->accountNbr,
+                  &r->deposit.month,
+                  &r->deposit.day,
+                  &r->deposit.year,
+                  r->country,
+                  &r->phone,
+                  &r->amount,
+                  r->accountType) != EOF;
+}
+
 void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
 {
 
@@ -410,7 +426,7 @@ invaildChoice:
     case 2:
     invalidPhoneNumber:
         printf("Enter new phone number: ");
-        scanf("%ld", &records[foundIndex].phone);
+        scanf("%d", &records[foundIndex].phone);
         // Validate phone number
         if (records[foundIndex].phone < 9999999 || records[foundIndex].phone > 100000000)
         {
@@ -422,7 +438,7 @@ invaildChoice:
         }
         // Check if phone number contains any letters
         char phoneNumberString[20];
-        sprintf(phoneNumberString, "%ld", records[foundIndex].phone);
+        sprintf(phoneNumberString, "%d", records[foundIndex].phone);
         for (int i = 0; phoneNumberString[i]; i++)
         {
             if (isalpha(phoneNumberString[i]))
@@ -565,6 +581,8 @@ void checkAccountDetails(struct User u)
     success(u);
 }
 
+
+
 void checkAllAccounts(struct User u)
 {
     char userName[100];
@@ -593,6 +611,322 @@ void checkAllAccounts(struct User u)
     fclose(pf);
     success(u);
 }
+
+void makeTransaction(struct User u)
+{
+    FILE *fp;
+    struct Record records[100]; // Assuming a maximum of 100 records for simplicity
+    struct Record record;
+
+    char input[50];
+    int accountId;
+    char userName[50];
+    int totalRecords = 0;
+    int foundIndex = -1;
+
+    while (foundIndex == -1)
+    {
+        printf("Enter the account ID you want to make a transaction:");
+        scanf("%s", input);
+
+        accountId = atoi(input); // Convert string to int
+        fp = fopen(RECORDS, "r");
+        if (fp == NULL)
+        {
+            printf("Error opening file!\n");
+            return;
+        }
+        totalRecords = 0;
+        bool found = false;
+
+        while (getAccountFromFile(fp, userName, &record))
+        {
+            strcpy(record.name, userName); // Store the user's name in the record
+            records[totalRecords] = record;
+            if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
+            {
+                foundIndex = totalRecords;
+                found = true;
+            }
+            totalRecords++;
+        }
+        fclose(fp);
+
+        if (!found)
+        {
+            printf("This account does not exist\n");
+            sleep(3);
+        }
+    }
+
+    char transactionType;
+    double amount;
+    char amountInStr[100];
+    char transactionTypeInStr[2];
+    char transactionDate[11]; // 10 characters for mm/dd/yyyy and 1 for the null terminator
+
+    printf("Enter the transaction type (D for deposit, W for withdraw): ");
+    scanf("%s", transactionTypeInStr);
+    transactionType = transactionTypeInStr[0];
+
+    if (transactionType != 'D' && transactionType != 'W')
+    {
+        printf("Invalid transaction type! Please enter D for deposit or W for withdraw.\n");
+        sleep(3);
+        makeTransaction(u);
+        return;
+    }
+
+invalidAmount:
+    if (transactionType == 'D')
+    {
+        printf("Enter the amount to deposit: $");
+    }
+    else
+    {
+        printf("Enter the amount to withdraw: $");
+    }
+    scanf("%s", amountInStr);
+
+    if (hasNonDigitChars(amountInStr, false, true))
+    {
+        printf("Invalid amount! Please enter a valid amount.\n");
+        sleep(3);
+        system("clear");
+        goto invalidAmount;
+        return;
+    }
+
+    amount = atof(amountInStr); // Convert string to double
+
+    if (amount < 0 || amount > 10000000)
+    {
+        printf("Invalid amount! Please enter an amount between $0 and $10,000,000.\n");
+        sleep(3);
+        system("clear");
+        goto invalidAmount;
+        return;
+    }
+
+    if (transactionType == 'W' && amount > records[foundIndex].amount)
+    {
+        printf("Insufficient funds! You cannot withdraw more than the current balance.\n");
+        sleep(3);
+        system("clear");
+        goto invalidAmount;
+        return;
+    } else if (transactionType == 'W' && amount == records[foundIndex].amount)
+    {
+        printf("Warning: Your account balance will be zero after this withdrawal.\n");
+        sleep(3);
+    }
+
+    // Update the account balance
+    if (transactionType == 'D')
+    {
+        records[foundIndex].amount += amount;
+    }
+    else
+    {
+        records[foundIndex].amount -= amount;
+    }
+
+    // Write the entire array back to the file
+    fp = fopen(RECORDS, "w");
+    if (fp == NULL)
+    {
+        printf("Error opening file!\n");
+        sleep(5);
+        return;
+    }
+
+    for (int i = 0; i < totalRecords; i++)
+    {
+        struct User tempUser; // Temporary User to pass the correct name to saveAccountToFile
+        strcpy(tempUser.name, records[i].name);
+        tempUser.id = records[i].userId; // Assuming you have a userId field
+        saveAccountToFile(fp, tempUser, records[i]);
+    }
+    fclose(fp);
+    printf("Transaction completed successfully!\n");
+    success(u);
+}
+
+void removeAccount(struct User u)
+{
+    FILE *fp;
+    struct Record records[100]; // Assuming a maximum of 100 records for simplicity
+    struct Record record;
+
+    char input[50];
+    int accountId;
+    char userName[50];
+    int totalRecords = 0;
+    int foundIndex = -1;
+
+    while (foundIndex == -1)
+    {
+        printf("Enter the account ID you want to remove:");
+        scanf("%s", input);
+
+        accountId = atoi(input); // Convert string to int
+        fp = fopen(RECORDS, "r");
+        if (fp == NULL)
+        {
+            printf("Error opening file!\n");
+            return;
+        }
+        totalRecords = 0;
+        bool found = false;
+
+        while (getAccountFromFile(fp, userName, &record))
+        {
+            strcpy(record.name, userName); // Store the user's name in the record
+            records[totalRecords] = record;
+            if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
+            {
+                foundIndex = totalRecords;
+                found = true;
+            }
+            totalRecords++;
+        }
+        fclose(fp);
+
+        if (!found)
+        {
+            printf("This account does not exist\n");
+            sleep(3);
+        }
+    }
+
+    // Remove the account from the file
+    fp = fopen(RECORDS, "w");
+    if (fp == NULL)
+    {
+        printf("Error opening file!\n");
+        sleep(5);
+        return;
+    }
+    for (int i = 0; i < totalRecords; i++)
+    {
+        struct User tempUser; // Temporary User to pass the correct
+        strcpy(tempUser.name, records[i].name);
+        tempUser.id = records[i].userId; // Assuming you have a userId field
+        // ... copy other necessary User fields if there are any ...
+        if (foundIndex != i)
+        {
+            saveAccountToFile(fp, tempUser, records[i]);
+        }
+    }
+    fclose(fp);
+    printf("Account removed successfully!\n");
+    success(u);
+}
+
+void transferOwner(struct User u)
+{
+    FILE *fp;
+    struct Record records[100]; // Assuming a maximum of 100 records for simplicity
+    struct Record record;
+
+    char input[50];
+    int accountId;
+    char userName[50];
+    int totalRecords = 0;
+    int foundIndex = -1;
+
+    while (foundIndex == -1)
+    {
+        printf("Enter the account ID you want to transfer ownership:");
+        scanf("%s", input);
+
+        accountId = atoi(input); // Convert string to int
+        if (accountId == 0)
+        {
+            printf("Invalid account ID!\n");
+            continue;
+        }
+
+        fp = fopen(RECORDS, "r");
+        if (fp == NULL)
+        {
+            printf("Error opening file!\n");
+            return;
+        }
+
+        totalRecords = 0;
+        bool found = false;
+
+        while (getAccountFromFile(fp, userName, &record))
+        {
+            strcpy(record.name, userName); // Store the user's name in the record
+            records[totalRecords] = record;
+
+            if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
+            {
+                foundIndex = totalRecords;
+                found = true;
+            }
+            totalRecords++;
+        }
+        fclose(fp);
+
+        if (!found)
+        {
+            printf("This account does not exist or does not belong to you.\n");
+            sleep(3);
+        }
+    }
+
+    char newOwner[50];
+    int newOwnerIndex = -1;
+
+    printf("Enter the new owner's name: ");
+    scanf("%s", newOwner);
+
+    // Find the new owner in the records
+    for (int i = 0; i < totalRecords; i++)
+    {
+        if (strcmp(records[i].name, newOwner) == 0)
+        {
+            newOwnerIndex = i;
+            break;
+        }
+    }
+
+    if (newOwnerIndex == -1)
+    {
+        printf("New owner not found in records!\n");
+        return;
+    }
+
+    // Transfer ownership
+    strcpy(records[foundIndex].name, records[newOwnerIndex].name); // Assign the new owner's name to the original record
+
+    // Write the updated records back to the file
+    fp = fopen(RECORDS, "w");
+    if (fp == NULL)
+    {
+        printf("Error opening file!\n");
+        sleep(5);
+        return;
+    }
+
+    for (int i = 0; i < totalRecords; i++)
+    {
+        struct User tempUser;
+        strcpy(tempUser.name, records[i].name);
+        tempUser.id = records[i].userId; // Assuming you have a userId field
+
+        saveAccountToFile(fp, tempUser, records[i]);
+    }
+    fclose(fp);
+
+    printf("Ownership transferred successfully to %s!\n", newOwner);
+    success(u);
+}
+
+
 
 // methods
 bool hasNonDigitChars(const char *str, bool allowSlash, bool allowDot)
@@ -628,4 +962,19 @@ int generateUniqueRecordID()
     counter++;
 
     return abs(uniqueID);
+}
+
+void appendToTransactionRecords(const char *line)
+{
+    FILE *file = fopen("data/transactionsrecords.txt", "a");
+    if (file == NULL)
+    {
+        // Handle error opening the file
+        printf("Error opening the transaction records file!\n");
+        return;
+    }
+    // Append the line to the file
+    fprintf(file, "%s\n", line);
+    // Close the file
+    fclose(file);
 }
