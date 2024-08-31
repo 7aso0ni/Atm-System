@@ -857,9 +857,8 @@ void transferOwner(struct User u)
         while (getAccountFromFile(fp, userName, &record))
         {
 
-            strcpy(records[totalRecords].name, userName);         // Store the user's name in the record array
-            records[totalRecords].accountNbr = record.accountNbr; // Ensure the account number is copied correctly
-            records[totalRecords].userId = record.userId;         // Copy user ID or any other relevant fields
+            strcpy(records[totalRecords].name, userName); // Store the user's name in the record array
+            records[totalRecords] = record;               // Store the record in the record array
 
             if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
             {
@@ -883,7 +882,7 @@ void transferOwner(struct User u)
 
     char newOwner[50];
     char newOwnerName[50];
-    struct User newOwnerUser;
+    struct Record newOwnerUser;
     int ownerFoundIndex = 0; // Flag to indicate if the new owner is found
     bool ownerFound = false;
 
@@ -902,17 +901,15 @@ ownerNotFound:
 
     while (getAccountFromFile(fp, newOwnerName, &newOwnerUser))
     {
-        records[totalRecords].userId = newOwnerUser.id; // Ensure the user ID is copied correctly
-        strncpy(record.name, newOwner, sizeof(record.name) - 1);
-
         // Check if the new owner exists
         if (strcmp(newOwner, newOwnerName) == 0)
         {
-            printf("Debug: Match found with name: '%s'\n", newOwnerUser.name);
+            strcpy(records[ownerFoundIndex].name, newOwnerName); // Assign the new owner's name
 
             ownerFound = true;
             break; // Break once the correct user is found
         }
+        ownerFoundIndex++;
     }
     fclose(fp);
 
@@ -941,8 +938,8 @@ ownerNotFound:
 
         if (foundIndex == i)
         {
-            strcpy(tempUser.name, newOwner);
-            tempUser.id = newOwnerUser.id; // Assign the new owner's ID
+            strcpy(tempUser.name, newOwnerName);
+            tempUser.id = newOwnerUser.userId; // Assign the new owner's ID
         }
 
         printf("Debug: Saving record - AccountNbr: %d, UserName: %s\n", records[i].accountNbr, tempUser.name);
