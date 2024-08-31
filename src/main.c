@@ -1,8 +1,19 @@
 #include "header.h"
 #include <unistd.h>
+#include <signal.h>
+;
+
+void handleSigInt(int sig)
+{
+    printf("\n\nGoodbye :(\n\n");
+    fflush(stdout); // Flushes the output buffer
+
+    exit(1);
+}
 
 void mainMenu(struct User u)
 {
+
     int option;
     system("clear");
     printf("\n\n\t\t======= ATM =======\n\n");
@@ -24,7 +35,6 @@ void mainMenu(struct User u)
         break;
     case 2:
         updateAccountInfo(u);
-        // here
         break;
     case 3:
         // student TODO : add your **Check the details of existing accounts** function
@@ -94,6 +104,9 @@ initMenu:
 
 int main()
 {
+
+    signal(SIGINT, handleSigInt);
+
     struct User u;
 
     initMenu(&u);

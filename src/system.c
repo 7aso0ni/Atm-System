@@ -99,17 +99,26 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
 
 void success(struct User u)
 {
-    int option;
+    char option;
     printf("\n✔ Success!\n\n");
 invalid:
     printf("Enter 1 to go to the main menu and 0 to exit!\n");
-    scanf("%d", &option);
+    scanf(" %c", &option);
     system("clear");
-    if (option == 1)
+
+    if (!isdigit(option))
+    {
+        printf("Insert a valid operation!\n");
+        goto invalid;
+    }
+
+    int optionNumber = atoi(&option);
+
+    if (optionNumber == 1)
     {
         mainMenu(u);
     }
-    else if (option == 0)
+    else if (optionNumber == 0)
     {
         exit(1);
     }
@@ -175,6 +184,7 @@ noAccount:
 InvalidAccountNumber:
     printf("\nEnter the account number:");
     scanf("%s", &accNumInStr);
+
     if (hasNonDigitChars(accNumInStr, false, false))
     {
         printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
@@ -195,7 +205,7 @@ InvalidAccountNumber:
         goto InvalidAccountNumber;
     }
 
-    if (r.accountNbr < 1000000 || r.accountNbr > 9999999)
+    if (strlen(accNumInStr) != 7)
     {
         printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
         printf("\t\t\t\tHas to be 7 digits\n\n\n\n");
@@ -643,6 +653,13 @@ void makeTransaction(struct User u)
             records[totalRecords] = record;
             if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
             {
+
+                if (strcmp(record.accountType, "fixed01") == 0 || strcmp(record.accountType, "fixed02") == 0 || strcmp(record.accountType, "fixed03") == 0)
+                {
+                    printf("You cannot make transactions on fixed accounts.\n");
+                    stayOrReturn(1, makeTransaction, u);
+                }
+
                 foundIndex = totalRecords;
                 found = true;
             }
@@ -660,12 +677,13 @@ void makeTransaction(struct User u)
     char transactionType;
     double amount;
     char amountInStr[100];
-    char transactionTypeInStr[2];
     char transactionDate[11]; // 10 characters for mm/dd/yyyy and 1 for the null terminator
 
     printf("Enter the transaction type (D for deposit, W for withdraw): ");
-    scanf("%s", transactionTypeInStr);
-    transactionType = transactionTypeInStr[0];
+    scanf(" %c", &transactionType);
+
+    // upper case the input to make the input case insensitive
+    transactionType = toupper(transactionType);
 
     if (transactionType != 'D' && transactionType != 'W')
     {
