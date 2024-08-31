@@ -581,8 +581,6 @@ void checkAccountDetails(struct User u)
     success(u);
 }
 
-
-
 void checkAllAccounts(struct User u)
 {
     char userName[100];
@@ -715,7 +713,8 @@ invalidAmount:
         system("clear");
         goto invalidAmount;
         return;
-    } else if (transactionType == 'W' && amount == records[foundIndex].amount)
+    }
+    else if (transactionType == 'W' && amount == records[foundIndex].amount)
     {
         printf("Warning: Your account balance will be zero after this withdrawal.\n");
         sleep(3);
@@ -736,6 +735,7 @@ invalidAmount:
     if (fp == NULL)
     {
         printf("Error opening file!\n");
+        fflush(stdout);
         sleep(5);
         return;
     }
@@ -749,6 +749,7 @@ invalidAmount:
     }
     fclose(fp);
     printf("Transaction completed successfully!\n");
+    fflush(stdout);
     success(u);
 }
 
@@ -835,98 +836,125 @@ void transferOwner(struct User u)
     int totalRecords = 0;
     int foundIndex = -1;
 
+    // Loop until a valid account ID and owner is found
     while (foundIndex == -1)
     {
-        printf("Enter the account ID you want to transfer ownership:");
-        scanf("%s", input);
+        printf("Enter the account ID you want to transfer ownership: ");
+        scanf("%49s", input);
 
         accountId = atoi(input); // Convert string to int
-        if (accountId == 0)
-        {
-            printf("Invalid account ID!\n");
-            continue;
-        }
-
         fp = fopen(RECORDS, "r");
         if (fp == NULL)
         {
             printf("Error opening file!\n");
+            fflush(stdout);
             return;
         }
-
         totalRecords = 0;
         bool found = false;
 
+        // Read records from the file and find the target account
         while (getAccountFromFile(fp, userName, &record))
         {
-            strcpy(record.name, userName); // Store the user's name in the record
-            records[totalRecords] = record;
+
+            strcpy(records[totalRecords].name, userName);         // Store the user's name in the record array
+            records[totalRecords].accountNbr = record.accountNbr; // Ensure the account number is copied correctly
+            records[totalRecords].userId = record.userId;         // Copy user ID or any other relevant fields
 
             if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
             {
                 foundIndex = totalRecords;
                 found = true;
+                printf("Debug: Match found - AccountNbr: %d, Index: %d\n", accountId, foundIndex);
             }
             totalRecords++;
+            if (totalRecords >= 100)
+                break; // Ensure we do not exceed array bounds
         }
         fclose(fp);
 
         if (!found)
         {
             printf("This account does not exist or does not belong to you.\n");
+            fflush(stdout);
             sleep(3);
         }
     }
 
     char newOwner[50];
-    int newOwnerIndex = -1;
+    char newOwnerName[50];
+    struct User newOwnerUser;
+    int ownerFoundIndex = 0; // Flag to indicate if the new owner is found
+    bool ownerFound = false;
 
+ownerNotFound:
     printf("Enter the new owner's name: ");
-    scanf("%s", newOwner);
+    scanf("%49s", newOwner);
 
-    // Find the new owner in the records
-    for (int i = 0; i < totalRecords; i++)
-    {
-        if (strcmp(records[i].name, newOwner) == 0)
-        {
-            newOwnerIndex = i;
-            break;
-        }
-    }
-
-    if (newOwnerIndex == -1)
-    {
-        printf("New owner not found in records!\n");
-        return;
-    }
-
-    // Transfer ownership
-    strcpy(records[foundIndex].name, records[newOwnerIndex].name); // Assign the new owner's name to the original record
-
-    // Write the updated records back to the file
-    fp = fopen(RECORDS, "w");
+    // Open the file again to search for the new owner
+    fp = fopen(RECORDS, "r");
     if (fp == NULL)
     {
         printf("Error opening file!\n");
-        sleep(5);
+        fflush(stdout);
         return;
     }
 
-    for (int i = 0; i < totalRecords; i++)
+    while (getAccountFromFile(fp, newOwnerName, &newOwnerUser))
     {
-        struct User tempUser;
-        strcpy(tempUser.name, records[i].name);
-        tempUser.id = records[i].userId; // Assuming you have a userId field
+        records[totalRecords].userId = newOwnerUser.id; // Ensure the user ID is copied correctly
+        strncpy(record.name, newOwner, sizeof(record.name) - 1);
 
-        saveAccountToFile(fp, tempUser, records[i]);
+        // Check if the new owner exists
+        if (strcmp(newOwner, newOwnerName) == 0)
+        {
+            printf("Debug: Match found with name: '%s'\n", newOwnerUser.name);
+
+            ownerFound = true;
+            break; // Break once the correct user is found
+        }
     }
     fclose(fp);
 
-    printf("Ownership transferred successfully to %s!\n", newOwner);
+    if (!ownerFound)
+    {
+        printf("The new owner does not exist.\n");
+        fflush(stdout);
+        goto ownerNotFound;
+    }
+
+    // Reopen the file in write mode to update the records
+    fp = fopen(RECORDS, "w");
+    if (fp == NULL)
+    {
+        printf("Error opening file for writing!\n");
+        fflush(stdout);
+        return;
+    }
+
+    // Update the ownership and save all records back to the file
+    for (int i = 0; i < totalRecords; i++)
+    {
+        struct User tempUser; // Temporary User to pass the correct name to saveAccountToFile
+        strcpy(tempUser.name, records[i].name);
+        tempUser.id = records[i].userId;
+
+        if (foundIndex == i)
+        {
+            strcpy(tempUser.name, newOwner);
+            tempUser.id = newOwnerUser.id; // Assign the new owner's ID
+        }
+
+        printf("Debug: Saving record - AccountNbr: %d, UserName: %s\n", records[i].accountNbr, tempUser.name);
+        saveAccountToFile(fp, tempUser, records[i]);
+    }
+
+    fclose(fp);
+    printf("Account ownership transferred successfully!\n");
+    fflush(stdout);
+
     success(u);
 }
-
-
 
 // methods
 bool hasNonDigitChars(const char *str, bool allowSlash, bool allowDot)
