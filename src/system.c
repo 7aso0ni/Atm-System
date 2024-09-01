@@ -115,6 +115,7 @@ void success(struct User u)
     char option;
     printf("\n✔ Success!\n\n");
 invalid:
+    fflush(stdout);
     printf("Enter 1 to go to the main menu and 0 to exit!\n");
     scanf(" %c", &option);
     system("clear");
@@ -414,7 +415,6 @@ void updateAccountInfo(struct User u)
         }
     }
 
-invaildChoice:
     printf("Select the field to update:\n 1: Country\n 2: Phone number\n");
     int choice;
     scanf("%d", &choice);
@@ -430,7 +430,7 @@ invaildChoice:
         {
             printf("Invalid country name! Country name should be between 2 and 99 characters.\n");
             fflush(stdout);
-            sleep(3);
+            sleep(1);
             goto invalidCountry;
         }
         // Check if country name contains any digits
@@ -440,7 +440,7 @@ invaildChoice:
             {
                 printf("Invalid country name! Country name should not contain any digits.\n");
                 fflush(stdout);
-                sleep(3);
+                sleep(1);
                 goto invalidCountry;
             }
         }
@@ -455,7 +455,7 @@ invaildChoice:
         {
             printf("Invalid phone number! Phone number should be a exactly 8 digits.\n");
             fflush(stdout);
-            sleep(3);
+            sleep(1);
             system("clear");
             goto invalidPhoneNumber;
         }
@@ -478,9 +478,7 @@ invaildChoice:
     default:
         printf("Invalid choice!\n Please enter a valid choice\n");
         fflush(stdout);
-        sleep(3);
-        system("clear");
-        goto invaildChoice;
+        stayOrReturn(0, updateAccountInfo, u);
     }
 
     // Write the entire array back to the file
@@ -506,6 +504,7 @@ invaildChoice:
     }
     fclose(fp);
     printf("Account information updated successfully!\n");
+    fflush(stdout);
     success(u);
 }
 
