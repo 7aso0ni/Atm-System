@@ -60,23 +60,36 @@ void saveAccountToFile(FILE *ptr, struct User u, struct Record r)
 
 void stayOrReturn(int notGood, void f(struct User u), struct User u)
 {
-    int option;
+    char option;
     if (notGood == 0)
     {
-        system("clear");
-        printf("\n✖ Record not found!!\n");
     invalid:
+        system("clear");
         printf("\nEnter 0 to try again, 1 to return to main menu and 2 to exit:");
-        scanf("%d", &option);
-        if (option == 0)
+        scanf(" %c", &option);
+
+        if (!isdigit(option))
+        {
+            printf("Insert a valid operation!\n");
+            sleep(2);
+            goto invalid;
+        }
+
+        int optionInNumber = atoi(&option);
+
+        if (optionInNumber == 0)
+        {
+            system("clear");
             f(u);
-        else if (option == 1)
+        }
+        else if (optionInNumber == 1)
             mainMenu(u);
-        else if (option == 2)
+        else if (optionInNumber == 2)
             exit(0);
         else
         {
             printf("Insert a valid operation!\n");
+            sleep(2);
             goto invalid;
         }
     }
@@ -99,17 +112,26 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
 
 void success(struct User u)
 {
-    int option;
+    char option;
     printf("\n✔ Success!\n\n");
 invalid:
     printf("Enter 1 to go to the main menu and 0 to exit!\n");
-    scanf("%d", &option);
+    scanf(" %c", &option);
     system("clear");
-    if (option == 1)
+
+    if (!isdigit(option))
+    {
+        printf("Insert a valid operation!\n");
+        goto invalid;
+    }
+
+    int optionNumber = atoi(&option);
+
+    if (optionNumber == 1)
     {
         mainMenu(u);
     }
-    else if (option == 0)
+    else if (optionNumber == 0)
     {
         exit(1);
     }
@@ -175,6 +197,7 @@ noAccount:
 InvalidAccountNumber:
     printf("\nEnter the account number:");
     scanf("%s", &accNumInStr);
+
     if (hasNonDigitChars(accNumInStr, false, false))
     {
         printf("\n\n\n\n\n\t\t\tOnly valid numbers are allowed.\n\n\n");
@@ -195,7 +218,7 @@ InvalidAccountNumber:
         goto InvalidAccountNumber;
     }
 
-    if (r.accountNbr < 1000000 || r.accountNbr > 9999999)
+    if (strlen(accNumInStr) != 7)
     {
         printf("\n\n\n\n\t\t\t\tInvalid Account Number!\n");
         printf("\t\t\t\tHas to be 7 digits\n\n\n\n");
@@ -554,6 +577,11 @@ void checkAccountDetails(struct User u)
     }
     else if (strcmp(records[foundIndex].accountType, "fixed01") == 0)
     {
+        // calculate the monthly interest rate
+        yearFromDeposit = records[foundIndex].deposit.year;
+        interestAmount = records[foundIndex].amount * 0.04 / 12;
+        printf("You will gain $%.2lf of interest on day 10 of every month.\n", interestAmount);
+
         // calculate 1 year from account creation
         yearFromDeposit = records[foundIndex].deposit.year + 1;
         interestAmount = records[foundIndex].amount * 0.04;
@@ -561,6 +589,10 @@ void checkAccountDetails(struct User u)
     }
     else if (strcmp(records[foundIndex].accountType, "fixed02") == 0)
     {
+        yearFromDeposit = records[foundIndex].deposit.year;
+        interestAmount = records[foundIndex].amount * 0.05 / 12;
+        printf("You will gain $%.2lf of interest on day 10 of every month.\n", interestAmount);
+
         // calculate 2 years from account creation
         yearFromDeposit = records[foundIndex].deposit.year + 2;
         interestAmount = (records[foundIndex].amount * 0.05 * 2);
@@ -568,6 +600,10 @@ void checkAccountDetails(struct User u)
     }
     else if (strcmp(records[foundIndex].accountType, "fixed03") == 0)
     {
+        yearFromDeposit = records[foundIndex].deposit.year;
+        interestAmount = records[foundIndex].amount * 0.08 / 12;
+        printf("You will gain $%.2lf of interest on day 10 of every month.\n", interestAmount);
+
         // calculate 3 years from account creation
         yearFromDeposit = records[foundIndex].deposit.year + 3;
         interestAmount = records[foundIndex].amount * 0.08 * 3;
@@ -643,6 +679,14 @@ void makeTransaction(struct User u)
             records[totalRecords] = record;
             if (record.accountNbr == accountId && strcmp(userName, u.name) == 0)
             {
+
+                if (strcmp(record.accountType, "fixed01") == 0 || strcmp(record.accountType, "fixed02") == 0 || strcmp(record.accountType, "fixed03") == 0)
+                {
+                    printf("You cannot make transactions on fixed accounts.\n");
+                    fflush(stdout);
+                    stayOrReturn(0, makeTransaction, u);
+                }
+
                 foundIndex = totalRecords;
                 found = true;
             }
@@ -660,12 +704,13 @@ void makeTransaction(struct User u)
     char transactionType;
     double amount;
     char amountInStr[100];
-    char transactionTypeInStr[2];
     char transactionDate[11]; // 10 characters for mm/dd/yyyy and 1 for the null terminator
 
     printf("Enter the transaction type (D for deposit, W for withdraw): ");
-    scanf("%s", transactionTypeInStr);
-    transactionType = transactionTypeInStr[0];
+    scanf(" %c", &transactionType);
+
+    // upper case the input to make the input case insensitive
+    transactionType = toupper(transactionType);
 
     if (transactionType != 'D' && transactionType != 'W')
     {
@@ -864,7 +909,6 @@ void transferOwner(struct User u)
             {
                 foundIndex = totalRecords;
                 found = true;
-                printf("Debug: Match found - AccountNbr: %d, Index: %d\n", accountId, foundIndex);
             }
             totalRecords++;
             if (totalRecords >= 100)
@@ -917,7 +961,7 @@ ownerNotFound:
     {
         printf("The new owner does not exist.\n");
         fflush(stdout);
-        goto ownerNotFound;
+        stayOrReturn(0, transferOwner, u);
     }
 
     // Reopen the file in write mode to update the records
@@ -942,7 +986,6 @@ ownerNotFound:
             tempUser.id = newOwnerUser.userId; // Assign the new owner's ID
         }
 
-        printf("Debug: Saving record - AccountNbr: %d, UserName: %s\n", records[i].accountNbr, tempUser.name);
         saveAccountToFile(fp, tempUser, records[i]);
     }
 
