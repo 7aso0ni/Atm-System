@@ -65,12 +65,14 @@ void stayOrReturn(int notGood, void f(struct User u), struct User u)
     {
     invalid:
         system("clear");
-        printf("\nEnter 0 to try again, 1 to return to main menu and 2 to exit:");
+        fflush(stdout);
+        printf("\nEnter 0 to try again, 1 to return to main menu and 2 to exit:\n");
         scanf(" %c", &option);
 
         if (!isdigit(option))
         {
             printf("Insert a valid operation!\n");
+            while (getchar() != '\n'); // clear the buffer
             sleep(2);
             goto invalid;
         }
@@ -115,6 +117,7 @@ void success(struct User u)
     char option;
     printf("\n✔ Success!\n\n");
 invalid:
+    fflush(stdout);
     printf("Enter 1 to go to the main menu and 0 to exit!\n");
     scanf(" %c", &option);
     system("clear");
@@ -122,6 +125,8 @@ invalid:
     if (!isdigit(option))
     {
         printf("Insert a valid operation!\n");
+        while (getchar() != '\n'); // clear the buffer
+        sleep(2);
         goto invalid;
     }
 
@@ -380,8 +385,18 @@ void updateAccountInfo(struct User u)
 
     while (foundIndex == -1)
     {
+        fflush(stdin);
         printf("Enter the account ID you want to update:");
         scanf("%s", input);
+
+        if (hasNonDigitChars(input, false, false))
+        {
+            printf("\nInvalid account ID! Please enter a valid account ID.\n");
+            fflush(stdout);
+            sleep(1);
+            system("clear");
+            continue;
+        }
 
         accountId = atoi(input); // Convert string to int
         fp = fopen(RECORDS, "r");
@@ -414,12 +429,23 @@ void updateAccountInfo(struct User u)
         }
     }
 
-invaildChoice:
     printf("Select the field to update:\n 1: Country\n 2: Phone number\n");
-    int choice;
-    scanf("%d", &choice);
+    char choice;
+    scanf(" %c", &choice);
 
-    switch (choice)
+    if (!hasNonDigitChars(&choice, false, false))
+    {
+        printf("Invalid choice!\n");
+        fflush(stdout);
+        while (getchar() != '\n'); // clear the buffer
+        sleep(1);
+        system("clear");
+        stayOrReturn(0, updateAccountInfo, u);
+    }
+
+    int choiceInNumber = atoi(&choice);
+
+    switch (choiceInNumber)
     {
     case 1:
     invalidCountry:
@@ -430,7 +456,7 @@ invaildChoice:
         {
             printf("Invalid country name! Country name should be between 2 and 99 characters.\n");
             fflush(stdout);
-            sleep(3);
+            sleep(1);
             goto invalidCountry;
         }
         // Check if country name contains any digits
@@ -440,7 +466,7 @@ invaildChoice:
             {
                 printf("Invalid country name! Country name should not contain any digits.\n");
                 fflush(stdout);
-                sleep(3);
+                sleep(1);
                 goto invalidCountry;
             }
         }
@@ -448,39 +474,37 @@ invaildChoice:
 
     case 2:
     invalidPhoneNumber:
+        char phoneInStr[9];
         printf("Enter new phone number: ");
-        scanf("%d", &records[foundIndex].phone);
+        scanf("%s", &phoneInStr);
+
+        if (hasNonDigitChars(phoneInStr, false, false))
+        {
+            printf("Invalid phone number! Please enter a valid phone number.\n");
+            fflush(stdout);
+            sleep(1);
+            system("clear");
+            goto invalidPhoneNumber;
+        }
+
+        records[foundIndex].phone = atoi(phoneInStr);
         // Validate phone number
         if (records[foundIndex].phone < 9999999 || records[foundIndex].phone > 100000000)
         {
             printf("Invalid phone number! Phone number should be a exactly 8 digits.\n");
             fflush(stdout);
-            sleep(3);
+            sleep(1);
             system("clear");
             goto invalidPhoneNumber;
         }
-        // Check if phone number contains any letters
-        char phoneNumberString[20];
-        sprintf(phoneNumberString, "%d", records[foundIndex].phone);
-        for (int i = 0; phoneNumberString[i]; i++)
-        {
-            if (isalpha(phoneNumberString[i]))
-            {
-                printf("Invalid phone number! Phone number should not contain any letters.\n");
-                fflush(stdout);
-                sleep(3);
-                system("clear");
-                goto invalidPhoneNumber;
-            }
-        }
+
         break;
 
     default:
         printf("Invalid choice!\n Please enter a valid choice\n");
         fflush(stdout);
-        sleep(3);
-        system("clear");
-        goto invaildChoice;
+        sleep(1);
+        stayOrReturn(0, updateAccountInfo, u);
     }
 
     // Write the entire array back to the file
@@ -506,6 +530,7 @@ invaildChoice:
     }
     fclose(fp);
     printf("Account information updated successfully!\n");
+    fflush(stdout);
     success(u);
 }
 
@@ -525,6 +550,15 @@ void checkAccountDetails(struct User u)
     {
         printf("Enter the account ID you want to check:");
         scanf("%s", input);
+
+        if (hasNonDigitChars(input, false, false))
+        {
+            printf("Invalid account ID! Please enter a valid account ID.\n");
+            fflush(stdout);
+            sleep(1);
+            system("clear");
+            continue;
+        }
 
         accountId = atoi(input); // Convert string to int
         fp = fopen(RECORDS, "r");
@@ -663,6 +697,15 @@ void makeTransaction(struct User u)
         printf("Enter the account ID you want to make a transaction:");
         scanf("%s", input);
 
+        if (hasNonDigitChars(input, false, false))
+        {
+            printf("Invalid account ID! Please enter a valid account ID.\n");
+            fflush(stdout);
+            sleep(1);
+            system("clear");
+            continue;
+        }
+
         accountId = atoi(input); // Convert string to int
         fp = fopen(RECORDS, "r");
         if (fp == NULL)
@@ -684,6 +727,7 @@ void makeTransaction(struct User u)
                 {
                     printf("You cannot make transactions on fixed accounts.\n");
                     fflush(stdout);
+                    sleep(2);
                     stayOrReturn(0, makeTransaction, u);
                 }
 
@@ -815,6 +859,15 @@ void removeAccount(struct User u)
         printf("Enter the account ID you want to remove:");
         scanf("%s", input);
 
+        if (hasNonDigitChars(input, false, false))
+        {
+            printf("Invalid account ID! Please enter a valid account ID.\n");
+            fflush(stdout);
+            sleep(1);
+            system("clear");
+            continue;
+        }
+
         accountId = atoi(input); // Convert string to int
         fp = fopen(RECORDS, "r");
         if (fp == NULL)
@@ -886,6 +939,15 @@ void transferOwner(struct User u)
     {
         printf("Enter the account ID you want to transfer ownership: ");
         scanf("%49s", input);
+
+        if (hasNonDigitChars(input, false, false))
+        {
+            printf("Invalid account ID! Please enter a valid account ID.\n");
+            fflush(stdout);
+            sleep(1);
+            system("clear");
+            continue;
+        }
 
         accountId = atoi(input); // Convert string to int
         fp = fopen(RECORDS, "r");
@@ -961,6 +1023,7 @@ ownerNotFound:
     {
         printf("The new owner does not exist.\n");
         fflush(stdout);
+        sleep(1);
         stayOrReturn(0, transferOwner, u);
     }
 

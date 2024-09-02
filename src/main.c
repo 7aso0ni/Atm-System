@@ -14,6 +14,7 @@ void handleSigInt(int sig)
 void mainMenu(struct User u)
 {
 
+mainMenu:
     int option;
     system("clear");
     printf("\n\n\t\t======= ATM =======\n\n");
@@ -26,9 +27,20 @@ void mainMenu(struct User u)
     printf("\n\t\t[6]- Remove existing account\n");
     printf("\n\t\t[7]- Transfer ownership\n");
     printf("\n\t\t[8]- Exit\n");
-    scanf("%d", &option);
+    scanf(" %c", &option);
 
-    switch (option)
+    if (hasNonDigitChars(&option, false, false))
+    {
+        printf("Invalid operation!\n");
+        fflush(stdout);
+        while (getchar() != '\n'); // clear the buffer
+        sleep(1);
+        goto mainMenu;
+    }
+
+    int optionNumber = atoi(&option);
+
+    switch (optionNumber)
     {
     case 1:
         createNewAcc(u);
@@ -60,6 +72,8 @@ void mainMenu(struct User u)
         break;
     default:
         printf("Invalid operation!\n");
+        sleep(1);
+        goto mainMenu;
     }
 };
 
