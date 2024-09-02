@@ -1008,12 +1008,10 @@ ownerNotFound:
     while (getAccountFromFile(fp, newOwnerName, &newOwnerUser))
     {
         // Check if the new owner exists
+        strcpy(records[ownerFoundIndex].name, newOwnerName); // Assign the new owner's name
         if (strcmp(newOwner, newOwnerName) == 0)
         {
-            strcpy(records[ownerFoundIndex].name, newOwnerName); // Assign the new owner's name
-
             ownerFound = true;
-            break; // Break once the correct user is found
         }
         ownerFoundIndex++;
     }
